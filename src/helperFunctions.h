@@ -35,8 +35,8 @@
   };
 
   struct OpenWeatherForecast {
-    float temp[8];
-    float rain[8];
+    double temp[8];
+    double rain[8];
 
   };
 
@@ -48,7 +48,6 @@
   String httpCall(String url);
   void connectToWifi();
   OpenWeatherStruct getOpenWeatherStruct();
-  haSensorStruct getHaSensorStruct(String entity);
   OpenWeatherForecast getWeatherForecast();
   const unsigned short* getWeatherImage(String icon);
   String customDateSplit(String str);

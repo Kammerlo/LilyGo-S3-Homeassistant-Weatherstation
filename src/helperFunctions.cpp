@@ -47,6 +47,7 @@ const unsigned short* getWeatherImage(String icon) {
 
 /**
  * Function just for splitting the date nicely :)
+ * Converting from 2023-08-06 to 06.08. (German date format)
 */
 String customDateSplit(String str) {
   String dateParts[3];
@@ -106,11 +107,12 @@ void connectToWifi() {
   Serial.println(WiFi.localIP());
 }
 
+/**
+ * Returns the current weather conditions for my location.
+*/
 OpenWeatherStruct getOpenWeatherStruct() {
     StaticJsonDocument<1024> doc;
-    // put your main code here, to run repeatedly:
     String payload = httpCall(OPENWEATHER_URL);
-    // deserializeJson nimmt auch den httpClient - Hier eine Möglichkeit Speicher zu sparen.
     DeserializationError error = deserializeJson(doc, payload);
     OpenWeatherStruct currentDataStruct;
     if (error) {
@@ -128,38 +130,25 @@ OpenWeatherStruct getOpenWeatherStruct() {
     return currentDataStruct;
 }
 
-haSensorStruct getHaSensorStruct(String entity){
-  StaticJsonDocument<768> doc;
-  String payload = httpCall(HA_BASE_URL + entity);
-
-  // deserializeJson nimmt auch den httpClient - Hier eine Möglichkeit Speicher zu sparen.
-    DeserializationError error = deserializeJson(doc, payload);
-    haSensorStruct currentSensorData;
-    if(error) {
-        Serial.print(F("deserializeJson() failed: "));
-        Serial.println(error.f_str());
-        return currentSensorData;
-    }
-    currentSensorData.state = doc["state"].as<String>();
-    currentSensorData.unit = doc["attributes"]["unit_of_measurement"].as<String>();
-    return currentSensorData;
-}
-
+/**
+ * Returns the forecast for the next 24Hours. If you need more you need to increase the JsonDocument Size and the iteration in the for-loop.
+ * Documentation of API is here: https://openweathermap.org/forecast5
+*/
 OpenWeatherForecast getWeatherForecast() {
-  String url = "http://api.openweathermap.org/data/2.5/forecast?lat=52.3830785&lon=10.657896&appid=f6fefa3ba2838f33fae50a289a04c2ad&units=metric&cnt=8";
-  String payload = httpCall(url);
-  StaticJsonDocument<6144> doc;
+  String payload = httpCall(FORECAST_URL);
+  DynamicJsonDocument doc(6144);
+
+  DeserializationError error = deserializeJson(doc, payload);
   OpenWeatherForecast obj;
-  DeserializationError error = deserializeJson(doc,payload);
-  if(error) {
-        Serial.print(F("deserializeJson() failed: "));
-        Serial.println(error.f_str());
-        return obj;
+  if (error) {
+    Serial.print(F("deserializeJson() failed: "));
+    Serial.println(error.f_str());
+    return obj;
   }
-  JsonArray list = doc["list"];
-  for(int i = 0; i <= 7; i++) {
-    obj.temp[i] = list[i]["main"]["temp"];
-    obj.rain[i] = list[i]["pop"];
+  
+  for(int i = 0; i < 8; i++) {
+    obj.temp[i] = doc["list"][i]["main"]["temp"];
+    obj.rain[i] = doc["list"][i]["pop"];
   }
   return obj;
 }
